@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: netbox-community
+spec:
+  serviceName: redis
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:alpine
+        ports:
+        - containerPort: 6379
+          name: client
+        - containerPort: 16379
+          name: gossip
+        command: ["/conf/update-node.sh", "redis-server", "/conf/redis.conf"]
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: masterauth
+          valueFrom:  
+            secretKeyRef:
+              name: redis-secret
+              key: redis-password
+        - name: requirepass
+          valueFrom:  
+            secretKeyRef:
+              name: redis-secret
+              key: redis-password
+        volumeMounts:
+        - name: redis-config
+          mountPath: /conf
+          subPath: redis.conf
+          readOnly: true
+        - name: redis-pvc
+          mountPath: /data
+          readOnly: false
+      volumes:
+      - name: redis-config
+        secret:
+          secretName: redis-config
+          items:
+            - key: redis.conf
+              path: redis.conf
+      - name: conf
+        configMap:
+          name: redis-config
+          defaultMode: 0755
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-pvc
+    spec:
+      storageClassName: longhorn
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi

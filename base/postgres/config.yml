@@ -1,0 +1,13 @@
+# Create ConfigMap postgres-secret for the postgres app
+# Define default database name, user, and password
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-configmap
+  namespace: netbox-community  
+  labels:
+    app: netbox-postgres
+data:
+  POSTGRES_DB: netbox
+  POSTGRES_USER: netbox
+  PGDATA: /var/lib/postgresql/data/netbox/

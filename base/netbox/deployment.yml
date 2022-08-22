@@ -1,0 +1,114 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netbox
+  namespace: netbox-community
+  labels:
+    app: netbox
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: netbox
+  template:
+    metadata:
+      labels:
+        app: netbox
+    spec:
+      containers:
+      # NetBox container using the netbox-docker image: https://github.com/netbox-community/netbox-docker
+      - name: netbox
+        image: tgenannt/netbox:v3.2
+        ports:
+        - name: http
+          containerPort: 8080
+        readinessProbe: # will mark the pod as ready once the initialization script is completed and will probe every 20 seconds
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 20
+        envFrom:
+          - configMapRef:
+              name: netbox-configmap
+        volumeMounts:
+        # Mounting secrets for netbox and other related components
+        - name: db-password
+          mountPath: /run/secrets/db_password
+          subPath: db_password
+          readOnly: true
+        - name: email-password
+          mountPath: /run/secrets/email_password
+          subPath: email_password
+          readOnly: true
+        - name: napalm-password
+          mountPath: /run/secrets/napalm_password
+          subPath: napalm_password
+          readOnly: true
+        - name: redis-password
+          mountPath: /run/secrets/redis_password
+          subPath: redis_password
+        - name: secret-key
+          mountPath: /run/secrets/secret_key
+          subPath: secret_key
+          readOnly: true
+        - name: superuser-api-token
+          mountPath: /run/secrets/superuser_api_token
+          subPath: superuser_api_token
+        - name: superuser-password
+          mountPath: /run/secrets/superuser_password
+          subPath: superuser_password
+          readOnly: true
+        ## Persistent Volume paths
+        - name: netbox-media-files # Allows for multiple replicas of the netbox pod to be available
+          mountPath: /opt/netbox/netbox/media
+      restartPolicy: Always
+      volumes:
+      # Reference to configmaps and PVs
+      - name: netbox-media-files
+        persistentVolumeClaim:
+          claimName: netbox-media-pvc
+          readOnly: false
+      # Populate via secret
+      - name: db-password
+        secret:
+          secretName: netbox-postgres-secret
+          items:
+          - key: postgres_password
+            path: db_password
+      - name: email-password
+        secret:
+          secretName: netbox-secret
+          items:
+          - key: email_password
+            path: email_password
+      - name: napalm-password
+        secret:
+          secretName: netbox-secret
+          items:
+          - key: napalm_password
+            path: napalm_password
+      - name: redis-password
+        secret:
+          secretName: redis-secret
+          items:
+          - key: redis-password
+            path: redis_password
+      - name: secret-key
+        secret:
+          secretName: netbox-secret
+          items:
+          - key: secret_key
+            path: secret_key
+      - name: superuser-password
+        secret:
+          secretName: netbox-secret
+          items:
+          - key: superuser_password
+            path: superuser_password
+      - name: superuser-api-token
+        secret:
+          secretName: netbox-secret
+          items:
+          - key: superuser_api_token
+            path: superuser_api_token

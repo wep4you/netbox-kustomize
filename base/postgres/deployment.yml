@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netbox-postgres
+  namespace: netbox-community
+  labels:
+    app: netbox-postgres
+spec:
+  replicas: 1 # Set 3 deployment replicas
+  selector:
+    matchLabels:
+      app: netbox-postgres
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: netbox-postgres
+    spec:
+      containers:
+        - image: postgres:14.4
+          name: netbox-postgres
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - containerPort: 5432
+              name: netbox-postgres
+          envFrom:
+            - secretRef:
+                name: netbox-postgres-secret
+            - configMapRef:
+                name: postgres-configmap
+          volumeMounts:
+            - name: netbox-postgres-persistent-storage
+              mountPath: /var/lib/postgresql/data
+          #resources:
+          #  limits:
+          #    cpu: '1'
+          #    memory: '512Mi'
+          #  requests:
+          #    cpu: '500m'
+          #    memory: '256Mi'
+      volumes:
+        - name: netbox-postgres-persistent-storage
+          persistentVolumeClaim:
+            claimName: netbox-postgres-pvc
+
