@@ -39,6 +39,9 @@ spec:
               name: redis-secret
               key: redis-password
         volumeMounts:
+        - name: conf
+          mountPath: /conf
+          readOnly: false        
         - name: redis-pvc
           mountPath: /data
           readOnly: false
