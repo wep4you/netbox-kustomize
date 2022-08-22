@@ -31,6 +31,17 @@ spec:
         envFrom:
           - configMapRef:
               name: netbox-configmap
+        env:
+        - name: SUPERUSER_EMAIL
+          valueFrom:  
+            secretKeyRef:
+              name: netbox-secret
+              key: superuser_email
+        - name: SUPERUSER_NAME
+          valueFrom:  
+            secretKeyRef:
+              name: netbox-secret
+              key: superuser_name
         volumeMounts:
         # Mounting secrets for netbox and other related components
         - name: db-password
